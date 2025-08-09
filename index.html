@@ -5,39 +5,67 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>掲示板</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
-    <div class="container">
-        <h1>掲示板</h1>
-        
-        <div class="post-form">
-            <h2>新規投稿</h2>
-            <form id="postForm">
-                <input type="text" id="author" placeholder="名前" required>
-                <textarea id="content" placeholder="内容" rows="4" required></textarea>
-                <button type="submit">投稿する</button>
-            </form>
+    <div class="main-container">
+        <div class="sidebar">
+            <div class="logo">
+                <i class="fas fa-comments"></i>
+                <span>掲示板</span>
+            </div>
+            <nav class="nav-menu">
+                <a href="#" class="nav-item active">
+                    <i class="fas fa-home"></i>
+                    <span>ホーム</span>
+                </a>
+            </nav>
         </div>
 
-        <div class="posts-container">
-            <h2>投稿一覧</h2>
-            <div id="posts"></div>
+        <div class="main-content">
+            <div class="header">
+                <h1>ホーム</h1>
+            </div>
+
+            <div class="tweet-compose">
+                <form id="postForm">
+                    <div class="compose-header">
+                        <div class="user-avatar">
+                            <i class="fas fa-user-circle"></i>
+                        </div>
+                        <div class="compose-content">
+                            <input type="text" id="author" placeholder="名前を入力（空欄の場合は名無しさん）" class="author-input">
+                            <textarea id="content" placeholder="いまどうしてる？" class="tweet-textarea" rows="3" required></textarea>
+                        </div>
+                    </div>
+                    <div class="compose-footer">
+                        <div class="compose-options">
+                            <i class="far fa-image"></i>
+                            <i class="far fa-smile"></i>
+                        </div>
+                        <button type="submit" class="tweet-button">投稿</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="timeline-divider"></div>
+
+            <div id="posts" class="posts-timeline">
+                <!-- Posts will be loaded here -->
+            </div>
+        </div>
+
+        <div class="right-sidebar">
+            <div class="info-card">
+                <h3>リアルタイム掲示板</h3>
+                <p>Firebaseを使用したリアルタイム更新機能付き</p>
+            </div>
         </div>
     </div>
 
-    <div id="replyModal" class="modal">
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <h2>返信する</h2>
-            <form id="replyForm">
-                <input type="hidden" id="parentId">
-                <input type="text" id="replyAuthor" placeholder="名前" required>
-                <textarea id="replyContent" placeholder="返信内容" rows="4" required></textarea>
-                <button type="submit">返信する</button>
-            </form>
-        </div>
-    </div>
-
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
