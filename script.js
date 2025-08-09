@@ -16,6 +16,9 @@ const db = firebase.firestore();
 // Reference to the posts collection
 const postsRef = db.collection('pracClass').doc('iimon').collection('apps').doc('keiziban').collection('posts');
 
+// Reference to the likes collection
+const likesRef = db.collection('pracClass').doc('iimon').collection('apps').doc('keiziban').collection('likes');
+
 // Get or generate unique user ID
 function getUserId() {
     let userId = localStorage.getItem('userId');
@@ -59,10 +62,14 @@ function setupRealtimeListener() {
     postsRef.orderBy('created_at', 'desc').onSnapshot((snapshot) => {
         const posts = [];
         snapshot.forEach((doc) => {
-            posts.push({
-                id: doc.id,
-                ...doc.data()
-            });
+            const data = doc.data();
+            // Only add top-level posts (not replies) to the main timeline
+            if (!data.parent_id) {
+                posts.push({
+                    id: doc.id,
+                    ...data
+                });
+            }
         });
         displayPosts(posts);
     }, (error) => {
@@ -78,9 +85,10 @@ function displayPosts(posts) {
         const postElement = createPostElement(post);
         postsContainer.appendChild(postElement);
         
-        // Load replies for this post
+        // Load replies and likes for this post
         if (!post.parent_id) {
             loadReplies(post.id);
+            loadLikes(post.id);
         }
     });
 }
@@ -130,11 +138,9 @@ function createPostElement(post, isReply = false) {
                         <i class="far fa-comment"></i>
                         <span class="reply-count" id="reply-count-${post.id}">0</span>
                     </button>
-                    <button class="action-button">
-                        <i class="far fa-heart"></i>
-                    </button>
-                    <button class="action-button">
-                        <i class="fas fa-share"></i>
+                    <button class="action-button like-button" onclick="toggleLike('${post.id}')" id="like-button-${post.id}">
+                        <i class="far fa-heart" id="like-icon-${post.id}"></i>
+                        <span class="like-count" id="like-count-${post.id}">0</span>
                     </button>
                 </div>
                 <div class="reply-form-container" id="reply-form-${post.id}" style="display: none;">
@@ -209,7 +215,8 @@ async function handlePostSubmit(e) {
             created_at: firebase.firestore.FieldValue.serverTimestamp(),
             parent_id: null,
             userId: currentUserId,
-            edited: false
+            edited: false,
+            likeCount: 0
         });
         
         // Clear only content, keep author name
@@ -262,7 +269,8 @@ async function handleReplySubmit(e, parentId) {
             created_at: firebase.firestore.FieldValue.serverTimestamp(),
             parent_id: parentId,
             userId: currentUserId,
-            edited: false
+            edited: false,
+            likeCount: 0
         });
         
         // Clear and hide form
@@ -337,5 +345,66 @@ function deletePost(postId) {
             console.error('Error deleting post:', error);
             alert('削除に失敗しました。');
         });
+    }
+}
+
+// Load likes for a post
+function loadLikes(postId) {
+    likesRef.doc(postId).onSnapshot((doc) => {
+        const likeCountElement = document.getElementById(`like-count-${postId}`);
+        const likeIconElement = document.getElementById(`like-icon-${postId}`);
+        const likeButtonElement = document.getElementById(`like-button-${postId}`);
+        
+        if (doc.exists) {
+            const data = doc.data();
+            const likeCount = data.users ? data.users.length : 0;
+            const isLiked = data.users && data.users.includes(currentUserId);
+            
+            if (likeCountElement) {
+                likeCountElement.textContent = likeCount;
+            }
+            
+            if (likeIconElement && isLiked) {
+                likeIconElement.className = 'fas fa-heart';
+                if (likeButtonElement) {
+                    likeButtonElement.classList.add('liked');
+                }
+            }
+        } else {
+            if (likeCountElement) {
+                likeCountElement.textContent = '0';
+            }
+        }
+    });
+}
+
+// Toggle like on a post
+async function toggleLike(postId) {
+    try {
+        const likeDoc = await likesRef.doc(postId).get();
+        
+        if (likeDoc.exists) {
+            const data = likeDoc.data();
+            const users = data.users || [];
+            
+            if (users.includes(currentUserId)) {
+                // Unlike
+                await likesRef.doc(postId).update({
+                    users: firebase.firestore.FieldValue.arrayRemove(currentUserId)
+                });
+            } else {
+                // Like
+                await likesRef.doc(postId).update({
+                    users: firebase.firestore.FieldValue.arrayUnion(currentUserId)
+                });
+            }
+        } else {
+            // First like
+            await likesRef.doc(postId).set({
+                users: [currentUserId]
+            });
+        }
+    } catch (error) {
+        console.error('Error toggling like:', error);
     }
 }
