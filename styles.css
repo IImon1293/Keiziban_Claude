@@ -168,21 +168,7 @@ body {
 }
 
 .compose-options {
-    display: flex;
-    gap: 16px;
-    color: #1d9bf0;
-}
-
-.compose-options i {
-    font-size: 20px;
-    cursor: pointer;
-    padding: 8px;
-    border-radius: 50%;
-    transition: background-color 0.2s;
-}
-
-.compose-options i:hover {
-    background-color: rgba(29, 155, 240, 0.1);
+    display: none;
 }
 
 .tweet-button {
