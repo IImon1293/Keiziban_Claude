@@ -370,32 +370,16 @@ body {
 /* Replies */
 .replies-container {
     margin-top: 12px;
-    margin-left: 40px;
-    padding-left: 20px;
-    border-left: 2px solid #2f3336;
+    margin-left: 58px;
 }
 
 .reply-tweet {
-    padding: 12px 0;
+    padding: 8px 0;
     border-top: 1px solid #2f3336;
-    background-color: rgba(255, 255, 255, 0.02);
-    margin-bottom: 8px;
-    border-radius: 8px;
-    padding: 12px;
 }
 
 .reply-tweet:first-child {
     border-top: none;
-    margin-top: 8px;
-}
-
-.reply-tweet .tweet-header {
-    gap: 8px;
-}
-
-.reply-tweet .tweet-avatar {
-    width: 32px;
-    height: 32px;
 }
 
 .reply-tweet .tweet-avatar i {
@@ -403,14 +387,6 @@ body {
 }
 
 .reply-tweet .tweet-text {
-    font-size: 14px;
-}
-
-.reply-tweet .tweet-meta {
-    font-size: 13px;
-}
-
-.reply-tweet .tweet-author {
     font-size: 14px;
 }
 

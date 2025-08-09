@@ -59,21 +59,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Set up real-time listener with onSnapshot
 function setupRealtimeListener() {
-    // Query only posts where parent_id is null (top-level posts)
-    postsRef.where('parent_id', '==', null)
-        .orderBy('created_at', 'desc')
-        .onSnapshot((snapshot) => {
-            const posts = [];
-            snapshot.forEach((doc) => {
-                posts.push({
-                    id: doc.id,
-                    ...doc.data()
-                });
+    postsRef.orderBy('created_at', 'desc').onSnapshot((snapshot) => {
+        const posts = [];
+        snapshot.forEach((doc) => {
+            posts.push({
+                id: doc.id,
+                ...doc.data()
             });
-            displayPosts(posts);
-        }, (error) => {
-            console.error('Error listening to posts:', error);
         });
+        displayPosts(posts);
+    }, (error) => {
+        console.error('Error listening to posts:', error);
+    });
 }
 
 // Display posts in the timeline
