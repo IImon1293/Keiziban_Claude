@@ -16,6 +16,18 @@ const db = firebase.firestore();
 // Reference to the posts collection
 const postsRef = db.collection('pracClass').doc('iimon').collection('apps').doc('keiziban').collection('posts');
 
+// Get or generate unique user ID
+function getUserId() {
+    let userId = localStorage.getItem('userId');
+    if (!userId) {
+        userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('userId', userId);
+    }
+    return userId;
+}
+
+const currentUserId = getUserId();
+
 // DOM elements
 let postsContainer;
 let postForm;
@@ -87,6 +99,9 @@ function createPostElement(post, isReply = false) {
         minute: '2-digit'
     }) : '読み込み中...';
 
+    const isOwner = post.userId === currentUserId;
+    const editedText = post.edited ? ' (編集済み)' : '';
+
     postDiv.innerHTML = `
         <div class="tweet-header">
             <div class="tweet-avatar">
@@ -95,9 +110,20 @@ function createPostElement(post, isReply = false) {
             <div class="tweet-content">
                 <div class="tweet-meta">
                     <span class="tweet-author">${escapeHtml(post.author)}</span>
-                    <span class="tweet-date">· ${date}</span>
+                    <span class="tweet-date">· ${date}${editedText}</span>
+                    ${isOwner && !isReply ? `
+                        <div class="tweet-menu">
+                            <button class="menu-button" onclick="toggleMenu('${post.id}')">
+                                <i class="fas fa-ellipsis-h"></i>
+                            </button>
+                            <div class="menu-dropdown" id="menu-${post.id}" style="display: none;">
+                                <button onclick="editPost('${post.id}')">編集</button>
+                                <button onclick="deletePost('${post.id}')" class="delete-button">削除</button>
+                            </div>
+                        </div>
+                    ` : ''}
                 </div>
-                <div class="tweet-text">${escapeHtml(post.content)}</div>
+                <div class="tweet-text" id="text-${post.id}">${escapeHtml(post.content)}</div>
                 ${!isReply ? `
                 <div class="tweet-actions">
                     <button class="action-button reply-button" onclick="showReplyForm('${post.id}')">
@@ -181,7 +207,9 @@ async function handlePostSubmit(e) {
             author: author,
             content: content,
             created_at: firebase.firestore.FieldValue.serverTimestamp(),
-            parent_id: null
+            parent_id: null,
+            userId: currentUserId,
+            edited: false
         });
         
         // Clear only content, keep author name
@@ -232,7 +260,9 @@ async function handleReplySubmit(e, parentId) {
             author: author,
             content: content,
             created_at: firebase.firestore.FieldValue.serverTimestamp(),
-            parent_id: parentId
+            parent_id: parentId,
+            userId: currentUserId,
+            edited: false
         });
         
         // Clear and hide form
@@ -252,4 +282,60 @@ function escapeHtml(unsafe) {
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
+}
+
+// Toggle menu dropdown
+function toggleMenu(postId) {
+    const menu = document.getElementById(`menu-${postId}`);
+    if (menu) {
+        menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+    }
+}
+
+// Close menus when clicking outside
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.menu-button')) {
+        document.querySelectorAll('.menu-dropdown').forEach(menu => {
+            menu.style.display = 'none';
+        });
+    }
+});
+
+// Edit post
+function editPost(postId) {
+    const textElement = document.getElementById(`text-${postId}`);
+    const currentText = textElement.innerText;
+    
+    const newContent = prompt('投稿を編集:', currentText);
+    
+    if (newContent !== null && newContent.trim() !== '' && newContent !== currentText) {
+        postsRef.doc(postId).update({
+            content: newContent.trim(),
+            edited: true,
+            edited_at: firebase.firestore.FieldValue.serverTimestamp()
+        }).catch(error => {
+            console.error('Error editing post:', error);
+            alert('編集に失敗しました。');
+        });
+    }
+}
+
+// Delete post
+function deletePost(postId) {
+    if (confirm('この投稿を削除してもよろしいですか？')) {
+        // Delete the post
+        postsRef.doc(postId).delete().then(() => {
+            // Delete all replies
+            postsRef.where('parent_id', '==', postId).get().then(snapshot => {
+                const batch = db.batch();
+                snapshot.forEach(doc => {
+                    batch.delete(doc.ref);
+                });
+                return batch.commit();
+            });
+        }).catch(error => {
+            console.error('Error deleting post:', error);
+            alert('削除に失敗しました。');
+        });
+    }
 }
